@@ -1,21 +1,21 @@
-# TapTap 抽卡记录查询插件 (xhh_gacha)
+# TapTap 抽卡记录查询插件
 
 通过 TapTap「战绩」公开接口，使用 **TapTap user_id** 查询异环等游戏的抽卡记录与出货统计。无需登录、无需抓包。
 
 ## 功能
 
-- `/xhh 绑定角色 <user_id>` — 绑定你的 TapTap user_id
-- `/xhh 解绑` — 解绑
-- `/xhh 抽卡记录 [游戏ID] [user_id]` — 查询抽卡记录（省略 user_id 使用已绑定账号）
-- `/xhh 抽卡统计 [游戏ID] [user_id]` — 统计抽卡数据
-- `/xhh 帮助` — 查看帮助
+- `/ck 绑定角色 <user_id>` — 绑定你的 TapTap user_id
+- `/ck 解绑` — 解绑
+- `/ck 抽卡记录 [游戏ID] [user_id]` — 查询抽卡记录（省略 user_id 使用已绑定账号）
+- `/ck 抽卡统计 [游戏ID] [user_id]` — 统计抽卡数据
+- `/ck 帮助` — 查看帮助
 
 ## 使用步骤
 
 1. **绑定异环角色**：打开战绩页 https://www.taptap.cn/poster/NIYXlFahOXHR ，登录并绑定你的异环角色
 2. **获取 TapTap user_id**：登录 https://accounts.taptap.cn/personal-info 查看
-3. **绑定账号**：向机器人发送 `/xhh 绑定角色 <你的user_id>`
-4. **查询**：发送 `/xhh 抽卡记录`
+3. **绑定账号**：向机器人发送 `/ck 绑定角色 <你的user_id>`
+4. **查询**：发送 `/ck 抽卡记录`
 5. **刷新数据**：回到战绩页点击「更新数据」按钮后，再重新查询即可看到最新数据
 
 ## 原理

@@ -24,7 +24,7 @@ DEFAULT_POSTER_URL = "https://www.taptap.cn/poster/NIYXlFahOXHR"
 GACHA_SUMMARY_URL = "https://www.taptap.cn/webapiv2/game-record/v1/gacha-record-summary"
 
 
-class XhhPlugin(Star):
+class CkPlugin(Star):
     """TapTap 战绩抽卡记录查询插件"""
 
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -37,8 +37,8 @@ class XhhPlugin(Star):
         """插件初始化"""
         logger.info("TapTap 抽卡记录查询插件已加载!")
 
-    @command_group("xhh")
-    def xhh(self):
+    @command_group("ck")
+    def ck(self):
         """TapTap 战绩抽卡记录查询"""
         pass
 
@@ -100,10 +100,10 @@ class XhhPlugin(Star):
             "Accept": "application/json, text/plain, */*",
         }
 
-    @xhh.command("绑定角色")
+    @ck.command("绑定角色")
     async def bind_role(self, event: AstrMessageEvent, user_id: str):
         """绑定 TapTap 角色
-        用法: /xhh 绑定角色 <TapTap user_id>
+        用法: /ck 绑定角色 <TapTap user_id>
         获取 user_id: 登录 https://accounts.taptap.cn/personal-info 查看
         绑定异环角色: 打开战绩页并绑定角色后即可查询
         """
@@ -115,24 +115,24 @@ class XhhPlugin(Star):
             )
             return
 
-        await self.put_kv_data(f"xhh_user_{event.get_sender_id()}", user_id)
+        await self.put_kv_data(f"ck_user_{event.get_sender_id()}", user_id)
         yield event.plain_result(
             f"✅ 已绑定 TapTap user_id：{user_id}\n"
             f"若还没绑定异环角色，请打开 {self._poster_url()} 绑定后再查询。"
         )
 
-    @xhh.command("解绑")
+    @ck.command("解绑")
     async def unbind(self, event: AstrMessageEvent):
         """解绑 TapTap 账号
-        用法: /xhh 解绑
+        用法: /ck 解绑
         """
-        await self.delete_kv_data(f"xhh_user_{event.get_sender_id()}")
+        await self.delete_kv_data(f"ck_user_{event.get_sender_id()}")
         yield event.plain_result("✅ 已解绑。")
 
-    @xhh.command("抽卡记录")
+    @ck.command("抽卡记录")
     async def gacha_records(self, event: AstrMessageEvent, game_id: Optional[str] = None, user_id: Optional[str] = None):
         """查询抽卡记录
-        用法: /xhh 抽卡记录 [游戏ID] [TapTap user_id]
+        用法: /ck 抽卡记录 [游戏ID] [TapTap user_id]
         省略 user_id 时使用已绑定的账号
         """
         names = self._game_names()
@@ -142,10 +142,10 @@ class XhhPlugin(Star):
             return
 
         uid = (user_id or "").strip() or await self.get_kv_data(
-            f"xhh_user_{event.get_sender_id()}", None
+            f"ck_user_{event.get_sender_id()}", None
         )
         if not uid:
-            yield event.plain_result("⚠️ 未绑定 TapTap 账号。\n请先输入 /xhh 绑定角色 <user_id>")
+            yield event.plain_result("⚠️ 未绑定 TapTap 账号。\n请先输入 /ck 绑定角色 <user_id>")
             return
 
         data = await self._fetch_summary(game_id, uid)
@@ -156,10 +156,10 @@ class XhhPlugin(Star):
         formatted = _format_records(data)
         yield event.plain_result(f"📊 {names[game_id]} 抽卡记录：\n{formatted}")
 
-    @xhh.command("抽卡统计")
+    @ck.command("抽卡统计")
     async def gacha_stats(self, event: AstrMessageEvent, game_id: Optional[str] = None, user_id: Optional[str] = None):
         """统计抽卡数据
-        用法: /xhh 抽卡统计 [游戏ID] [TapTap user_id]
+        用法: /ck 抽卡统计 [游戏ID] [TapTap user_id]
         """
         names = self._game_names()
         game_id = self._resolve_game_id(game_id)
@@ -168,10 +168,10 @@ class XhhPlugin(Star):
             return
 
         uid = (user_id or "").strip() or await self.get_kv_data(
-            f"xhh_user_{event.get_sender_id()}", None
+            f"ck_user_{event.get_sender_id()}", None
         )
         if not uid:
-            yield event.plain_result("⚠️ 未绑定 TapTap 账号。\n请先输入 /xhh 绑定角色 <user_id>")
+            yield event.plain_result("⚠️ 未绑定 TapTap 账号。\n请先输入 /ck 绑定角色 <user_id>")
             return
 
         data = await self._fetch_summary(game_id, uid)
@@ -182,23 +182,23 @@ class XhhPlugin(Star):
         formatted = _format_stats(data)
         yield event.plain_result(f"📊 {names[game_id]} 抽卡统计：\n{formatted}")
 
-    @xhh.command("帮助")
+    @ck.command("帮助")
     async def help_cmd(self, event: AstrMessageEvent):
         """查看插件帮助"""
         yield event.plain_result(
             "🎮 TapTap 抽卡记录查询插件\n"
             "┌────────────────────────────\n"
-            "│ /xhh 绑定角色 <user_id> — 绑定 TapTap 账号\n"
-            "│ /xhh 解绑            — 解绑\n"
-            "│ /xhh 抽卡记录 [游戏ID] — 查询抽卡记录\n"
-            "│ /xhh 抽卡统计 [游戏ID] — 统计抽卡数据\n"
+            "│ /ck 绑定角色 <user_id> — 绑定 TapTap 账号\n"
+            "│ /ck 解绑            — 解绑\n"
+            "│ /ck 抽卡记录 [游戏ID] — 查询抽卡记录\n"
+            "│ /ck 抽卡统计 [游戏ID] — 统计抽卡数据\n"
             "└────────────────────────────\n"
             f"游戏ID: {self._game_hint()}\n"
             "\n"
             "📌 使用步骤：\n"
             "① 打开战绩页绑定异环角色: " + self._poster_url() + "\n"
             "② 获取 user_id: https://accounts.taptap.cn/personal-info\n"
-            "③ 发送 /xhh 绑定角色 <user_id>\n"
+            "③ 发送 /ck 绑定角色 <user_id>\n"
             "④ 数据刷新: 回战绩页点『更新数据』按钮后重新查询"
         )
 
