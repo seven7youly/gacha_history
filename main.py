@@ -98,6 +98,8 @@ class CkPlugin(Star):
             "X-CLIENT-XUA": xua,
             "x-requested-with": "XMLHttpRequest",
             "Accept": "application/json, text/plain, */*",
+            "Referer": "https://www.taptap.cn/",
+            "Origin": "https://www.taptap.cn",
         }
 
     @ck.command("绑定角色")
@@ -233,7 +235,12 @@ class CkPlugin(Star):
                     timeout=aiohttp.ClientTimeout(total=15),
                 ) as resp:
                     if resp.status != 200:
-                        return f"❌ 请求失败：HTTP {resp.status}"
+                        body = ""
+                        try:
+                            body = (await resp.text())[:300]
+                        except Exception:
+                            pass
+                        return f"❌ 请求失败：HTTP {resp.status}\n{body}"
                     raw = await resp.json()
         except aiohttp.ClientError as e:
             return f"❌ 网络错误：{str(e)}"
