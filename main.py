@@ -7,8 +7,8 @@ from typing import Optional
 from astrbot.api.all import *
 
 
-# 小黑盒游戏代码表 (game_id 可根据实际抓包调整)
-GAME_NAMES = {
+# 内置游戏名称表（可在插件配置中通过 game_names 覆盖）
+DEFAULT_GAME_NAMES = {
     "1": "原神",
     "2": "崩坏：星穹铁道",
     "3": "绝区零",
@@ -16,11 +16,9 @@ GAME_NAMES = {
     "5": "无限暖暖",
 }
 
-GAME_HINT = "1=原神 2=崩铁 3=绝区零 4=异环 5=无限暖暖"
-
 
 class XhhPlugin(Star):
-    """小黑盒抽卡记录查询插件"""
+    """抽卡记录查询插件（抓包通用版）"""
 
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context, config)
@@ -28,55 +26,71 @@ class XhhPlugin(Star):
 
     async def initialize(self):
         """插件初始化"""
-        logger.info("小黑盒抽卡记录查询插件已加载!")
+        logger.info("抽卡记录查询插件已加载!")
 
     @command_group("xhh")
     def xhh(self):
-        """小黑盒抽卡记录查询插件"""
+        """抽卡记录查询插件"""
         pass
+
+    def _game_names(self) -> dict:
+        raw = self.config.get("game_names", "")
+        if isinstance(raw, dict) and raw:
+            return {str(k): str(v) for k, v in raw.items()}
+        if isinstance(raw, str) and raw.strip():
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict) and parsed:
+                    return {str(k): str(v) for k, v in parsed.items()}
+            except Exception:
+                pass
+        return dict(DEFAULT_GAME_NAMES)
+
+    def _game_hint(self) -> str:
+        return " ".join(f"{k}={v}" for k, v in self._game_names().items())
 
     @xhh.command("绑定")
     async def bind(self, event: AstrMessageEvent, token: str):
-        """绑定小黑盒 user_pkey
-        用法: /xhh 绑定 <user_pkey>
-        获取方式: 登录小黑盒网页版 xiaoheihe.cn，F12 → Cookie → 找到 user_pkey
+        """绑定抓包凭证（token/cookie 等）
+        用法: /xhh 绑定 <凭证>
+        凭证 = 抓包请求中属于你个人的那个值，如 authkey、token、cookie
         """
         token = token.strip()
         if not token:
             yield event.plain_result(
-                "⚠️ 请提供你的 user_pkey。\n"
-                "获取方式：登录小黑盒网页版，按 F12 打开开发者工具，\n"
-                "在 Application/存储/Cookie 中找到 user_pkey 的值。"
+                "⚠️ 请提供你的抓包凭证。\n"
+                "获取方式：抓包后，把请求里属于你个人的值（如 authkey、token、cookie）复制给我。"
             )
             return
 
-        await self.put_kv_data(f"xhh_pkey_{event.get_sender_id()}", token)
-        yield event.plain_result("✅ 小黑盒账号绑定成功！\n输入 /xhh 记录 查看抽卡记录。")
+        await self.put_kv_data(f"xhh_token_{event.get_sender_id()}", token)
+        yield event.plain_result("✅ 绑定成功！\n输入 /xhh 记录 查看抽卡记录。")
 
     @xhh.command("解绑")
     async def unbind(self, event: AstrMessageEvent):
-        """解绑小黑盒账号
+        """解绑账号
         用法: /xhh 解绑
         """
-        await self.delete_kv_data(f"xhh_pkey_{event.get_sender_id()}")
-        yield event.plain_result("✅ 已解绑小黑盒账号。")
+        await self.delete_kv_data(f"xhh_token_{event.get_sender_id()}")
+        yield event.plain_result("✅ 已解绑。")
 
     @xhh.command("记录")
     async def gacha_records(self, event: AstrMessageEvent, game_id: Optional[str] = None):
         """查询抽卡记录
-        用法: /xhh 记录 [游戏ID]  (1=原神 2=崩铁 3=绝区零 4=异环 5=无限暖暖)
+        用法: /xhh 记录 [游戏ID]
         """
+        names = self._game_names()
         game_id = self._resolve_game_id(game_id)
-        if game_id not in GAME_NAMES:
-            yield event.plain_result(f"⚠️ 未知游戏ID：{game_id}\n可选值：{GAME_HINT}")
+        if game_id not in names:
+            yield event.plain_result(f"⚠️ 未知游戏ID：{game_id}\n可选：{self._game_hint()}")
             return
 
-        pkey = await self.get_kv_data(f"xhh_pkey_{event.get_sender_id()}", None)
-        if not pkey:
-            yield event.plain_result("⚠️ 你还没有绑定小黑盒账号。\n请先输入 /xhh 绑定 <你的user_pkey>")
+        token = await self.get_kv_data(f"xhh_token_{event.get_sender_id()}", None)
+        if not token:
+            yield event.plain_result("⚠️ 你还没有绑定凭证。\n请先输入 /xhh 绑定 <凭证>")
             return
 
-        data = await self._fetch_records(game_id, pkey)
+        data = await self._fetch(game_id, token, offset=0)
         if isinstance(data, str):
             yield event.plain_result(data)
             return
@@ -84,27 +98,28 @@ class XhhPlugin(Star):
         formatted = _format_records(data)
         if formatted.startswith("{"):
             yield event.plain_result(
-                f"📊 {GAME_NAMES[game_id]} 抽卡记录\n{json.dumps(data, ensure_ascii=False, indent=2)[:3000]}"
+                f"📊 {names[game_id]} 抽卡记录\n{json.dumps(data, ensure_ascii=False, indent=2)[:3000]}"
             )
         else:
-            yield event.plain_result(f"📊 {GAME_NAMES[game_id]} 抽卡记录：\n{formatted}")
+            yield event.plain_result(f"📊 {names[game_id]} 抽卡记录：\n{formatted}")
 
     @xhh.command("统计")
     async def gacha_stats(self, event: AstrMessageEvent, game_id: Optional[str] = None):
         """统计抽卡数据
-        用法: /xhh 统计 [游戏ID]  (1=原神 2=崩铁 3=绝区零 4=异环 5=无限暖暖)
+        用法: /xhh 统计 [游戏ID]
         """
+        names = self._game_names()
         game_id = self._resolve_game_id(game_id)
-        if game_id not in GAME_NAMES:
-            yield event.plain_result(f"⚠️ 未知游戏ID：{game_id}\n可选值：{GAME_HINT}")
+        if game_id not in names:
+            yield event.plain_result(f"⚠️ 未知游戏ID：{game_id}\n可选：{self._game_hint()}")
             return
 
-        pkey = await self.get_kv_data(f"xhh_pkey_{event.get_sender_id()}", None)
-        if not pkey:
-            yield event.plain_result("⚠️ 你还没有绑定小黑盒账号。\n请先输入 /xhh 绑定 <你的user_pkey>")
+        token = await self.get_kv_data(f"xhh_token_{event.get_sender_id()}", None)
+        if not token:
+            yield event.plain_result("⚠️ 你还没有绑定凭证。\n请先输入 /xhh 绑定 <凭证>")
             return
 
-        data = await self._fetch_records(game_id, pkey)
+        data = await self._fetch(game_id, token, offset=0)
         if isinstance(data, str):
             yield event.plain_result(data)
             return
@@ -112,72 +127,66 @@ class XhhPlugin(Star):
         stats = _format_stats(data)
         if stats.startswith("{"):
             yield event.plain_result(
-                f"📊 {GAME_NAMES[game_id]} 抽卡统计\n{json.dumps(data, ensure_ascii=False, indent=2)[:3000]}"
+                f"📊 {names[game_id]} 抽卡统计\n{json.dumps(data, ensure_ascii=False, indent=2)[:3000]}"
             )
         else:
-            yield event.plain_result(f"📊 {GAME_NAMES[game_id]} 抽卡统计：\n{stats}")
+            yield event.plain_result(f"📊 {names[game_id]} 抽卡统计：\n{stats}")
 
     @xhh.command("帮助")
     async def help_cmd(self, event: AstrMessageEvent):
         """查看插件帮助"""
         yield event.plain_result(
-            "🎮 小黑盒抽卡记录查询插件\n"
+            "🎮 抽卡记录查询插件（抓包版）\n"
             "┌────────────────────────────\n"
-            "│ /xhh 绑定 <user_pkey>  — 绑定小黑盒账号\n"
-            "│ /xhh 解绑            — 解绑账号\n"
-            "│ /xhh 记录 [游戏ID]    — 查询抽卡记录\n"
-            "│ /xhh 统计 [游戏ID]    — 统计抽卡数据\n"
+            "│ /xhh 绑定 <凭证>   — 绑定个人凭证\n"
+            "│ /xhh 解绑         — 解绑\n"
+            "│ /xhh 记录 [游戏ID] — 查询抽卡记录\n"
+            "│ /xhh 统计 [游戏ID] — 统计抽卡数据\n"
             "└────────────────────────────\n"
-            f"游戏ID: {GAME_HINT}\n"
+            f"游戏ID: {self._game_hint()}\n"
             "\n"
-            "📌 user_pkey 获取方式：\n"
-            "登录小黑盒网页版 xiaoheihe.cn，按 F12 打开开发者工具，\n"
-            "在 Application/存储/Cookie 中找到 user_pkey 的值。"
+            "📌 使用前需在插件配置中填写抓包得到的接口 URL 和请求头，\n"
+            "并在 URL/请求头中用 {token} 标记个人凭证的位置。"
         )
 
     def _resolve_game_id(self, game_id: Optional[str]) -> str:
         """解析游戏 ID，未指定时使用配置中的默认值"""
         if game_id:
             return str(game_id).strip()
-        return str(self.config.get("default_game_id", "4"))
+        return str(self.config.get("default_game_id", "1"))
 
-    async def _fetch_records(self, game_id: str, pkey: str) -> dict | str:
-        """请求抽卡记录接口
+    async def _fetch(self, game_id: str, token: str, offset: int = 0) -> dict | str:
+        """请求抓包接口
+        URL 模板支持占位符：{token} {game_id} {limit} {offset}
+        请求头支持占位符：{token}
         返回解析后的数据 dict；失败时返回错误提示字符串
         """
-        api_url = self.config.get(
-            "api_list_gacha_url",
-            "https://api.xiaoheihe.cn/gacha/app/get_records",
-        )
-        limit = self.config.get("limit", 50)
+        api_url = str(self.config.get("api_list_gacha_url", "")).strip()
+        if not api_url:
+            return "⚠️ 未配置接口地址。请在插件配置中填写 api_list_gacha_url（抓包得到的 URL）。"
 
-        params = {
-            "game_id": game_id,
-            "limit": limit,
-            "offset": 0,
-        }
+        limit = self.config.get("limit", 50)
+        url = (
+            api_url.replace("{token}", token)
+            .replace("{game_id}", game_id)
+            .replace("{limit}", str(limit))
+            .replace("{offset}", str(offset))
+        )
 
         headers = {}
         try:
-            headers = json.loads(self.config.get("headers_json", "{}"))
+            raw = self.config.get("headers_json", "{}")
+            headers = json.loads(raw) if raw else {}
         except Exception:
-            pass
-
+            headers = {}
+        headers = {str(k): str(v).replace("{token}", token) for k, v in headers.items()}
         headers.setdefault("Accept", "application/json")
-        headers.setdefault("Content-Type", "application/json")
-
-        # 认证头：根据配置决定使用方式
-        if self.config.get("use_pkey_as_auth", False):
-            headers["Authorization"] = pkey
-        else:
-            headers["x-user-token"] = pkey
-        headers["x-user-pkey"] = pkey
+        headers.setdefault("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
 
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    api_url,
-                    params=params,
+                    url,
                     headers=headers,
                     timeout=aiohttp.ClientTimeout(total=15),
                 ) as resp:
@@ -285,6 +294,12 @@ def _extract_records(data: dict) -> list | None:
         return data["list"]
     if isinstance(data.get("data"), dict):
         d = data["data"]
+        if isinstance(d.get("records"), list):
+            return d["records"]
+        if isinstance(d.get("list"), list):
+            return d["list"]
+    if isinstance(data.get("result"), dict):
+        d = data["result"]
         if isinstance(d.get("records"), list):
             return d["records"]
         if isinstance(d.get("list"), list):
