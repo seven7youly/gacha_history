@@ -14,6 +14,11 @@
     "type": "string",
     "default": "https://www.taptap.cn/poster/NIYXlFahOXHR"
   },
+  "proxy": {
+    "description": "HTTP 代理地址（如 http://127.0.0.1:7890）。服务器直连 TapTap 被拦截(405)时填写可用代理；留空则直连",
+    "type": "string",
+    "default": ""
+  },
   "default_game_id": {
     "description": "默认查询的游戏 ID",
     "type": "int",

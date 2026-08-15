@@ -228,10 +228,12 @@ class CkPlugin(Star):
 
         try:
             async with aiohttp.ClientSession() as session:
+                proxy = str(self.config.get("proxy", "") or "").strip() or None
                 async with session.get(
                     GACHA_SUMMARY_URL,
                     params=params,
                     headers=self._headers(xua),
+                    proxy=proxy,
                     timeout=aiohttp.ClientTimeout(total=15),
                 ) as resp:
                     if resp.status != 200:
