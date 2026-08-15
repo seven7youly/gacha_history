@@ -1,10 +1,10 @@
-name: xhh_gacha
+name: gacha_history
 display_name: TapTap抽卡记录查询
 author: seven7youly
 desc: 通过 TapTap 战绩接口，使用 TapTap user_id 查询异环等游戏的抽卡记录与出货统计。
 short_desc: TapTap 抽卡记录查询
 version: 2.1.0
-repo: https://github.com/seven7youly/xhh_gacha
+repo: https://github.com/seven7youly/gacha_history
 astrbot_version: ">=4.9.2"
 support_platforms: []
 tags:
