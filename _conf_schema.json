@@ -1,0 +1,27 @@
+{
+  "api_list_gacha_url": {
+    "description": "抽卡记录查询接口 URL（通过浏览器 F12 抓包获取）",
+    "type": "string",
+    "default": "https://api.xiaoheihe.cn/gacha/app/get_records"
+  },
+  "headers_json": {
+    "description": "请求头（JSON 格式），从抓包中复制替换",
+    "type": "text",
+    "default": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\",\n  \"Accept\": \"application/json, text/plain, */*\",\n  \"Origin\": \"https://xiaoheihe.cn\",\n  \"Referer\": \"https://xiaoheihe.cn/\"\n}"
+  },
+  "use_pkey_as_auth": {
+    "description": "是否将 user_pkey 放入 Authorization 头（默认 false，使用 x-user-token 头）",
+    "type": "bool",
+    "default": false
+  },
+  "default_game_id": {
+    "description": "默认查询的游戏 ID（1=原神 2=崩铁 3=绝区零 4=异环 5=无限暖暖）",
+    "type": "int",
+    "default": 4
+  },
+  "limit": {
+    "description": "单次请求最大条数",
+    "type": "int",
+    "default": 50
+  }
+}

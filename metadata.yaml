@@ -1,0 +1,16 @@
+name: xhh_gacha
+display_name: 小黑盒抽卡记录查询
+author: seven7youly
+desc: 通过小黑盒接口查询抽卡记录（支持原神、崩铁、绝区零、异环、无限暖暖），可绑定账号、查看抽卡记录与统计出货数据。
+short_desc: 小黑盒抽卡记录查询
+version: 1.1.0
+repo: https://github.com/seven7youly/xhh_gacha
+astrbot_version: ">=4.9.2"
+support_platforms: []
+tags:
+  - 小黑盒
+  - 抽卡
+  - 原神
+  - 崩坏星穹铁道
+  - 绝区零
+  - gacha
