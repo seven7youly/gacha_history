@@ -1,15 +1,14 @@
 name: xhh_gacha
-display_name: 抽卡记录查询
+display_name: TapTap抽卡记录查询
 author: seven7youly
-desc: 抓包通用版抽卡记录查询插件。通过抓包得到的接口查询原神、崩铁、绝区零等游戏的抽卡记录与出货统计。
-short_desc: 抽卡记录查询
-version: 1.2.0
+desc: 通过 TapTap 战绩接口，使用 TapTap user_id 查询异环等游戏的抽卡记录与出货统计。
+short_desc: TapTap 抽卡记录查询
+version: 2.0.0
 repo: https://github.com/seven7youly/xhh_gacha
 astrbot_version: ">=4.9.2"
 support_platforms: []
 tags:
   - 抽卡
-  - 原神
-  - 崩坏星穹铁道
-  - 绝区零
+  - TapTap
+  - 异环
   - gacha
